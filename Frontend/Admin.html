@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel Admin - Bar System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        :root { --bg: #0a0a0a; --panel: #151515; --primary: #9D00FF; --text: #fff; --border: #333; }
+        body { margin: 0; font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--text); display: flex; min-height: 100vh; }
+        
+        aside { width: 250px; background: var(--panel); border-right: 1px solid var(--border); padding: 20px; display: flex; flex-direction: column; gap: 10px; }
+        aside h1 { margin: 0 0 30px 0; font-size: 1.5rem; color: var(--primary); }
+        .menu-btn { background: none; border: none; color: #888; text-align: left; padding: 15px; cursor: pointer; border-radius: 8px; font-size: 1rem; transition: 0.2s; }
+        .menu-btn:hover, .menu-btn.active { background: rgba(157,0,255,0.1); color: var(--primary); font-weight: bold; }
+
+        main { flex: 1; padding: 30px; overflow-y: auto; }
+        .tab-content { display: none; animation: fadeIn 0.3s; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        
+        h2 { border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-top: 0; }
+
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; color: #ccc; font-size: 0.9rem; }
+        input, select { width: 100%; padding: 10px; background: #222; border: 1px solid var(--border); color: white; border-radius: 5px; box-sizing: border-box; }
+        
+        button.btn-primary { background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        button.btn-sec { background: #555; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; margin-left: 10px;}
+
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: var(--panel); border-radius: 8px; overflow: hidden; }
+        th, td { padding: 15px; text-align: left; border-bottom: 1px solid var(--border); }
+        th { background: #222; color: #aaa; font-size: 0.85rem; }
+
+        .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .card { background: var(--panel); padding: 20px; border-radius: 10px; border: 1px solid var(--border); }
+        .big-number { font-size: 2rem; font-weight: 700; color: #00E5FF; margin: 10px 0; }
+        
+        /* ÁREA DOS GRÁFICOS */
+        .charts-container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .chart-card { background: var(--panel); padding: 20px; border-radius: 10px; border: 1px solid var(--border); min-height: 300px; }
+        canvas { max-height: 300px; width: 100%; }
+
+        .btn-icon { padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; color: white; margin-right: 5px; font-size: 0.9rem; }
+        .btn-edit { background: #2196F3; }
+        .btn-delete { background: #F44336; }
+        .btn-logout { margin-top: auto; background: #333; color: #fff; border: 1px solid #555; }
+        .btn-logout:hover { background: #444; }
+    </style>
+</head>
+<body>
+
+    <aside>
+        <h1>Bar Admin</h1>
+        <button class="menu-btn active" onclick="showTab('dashboard')">📊 Dashboard</button>
+        <button class="menu-btn" onclick="showTab('cardapio')">🍔 Cardápio</button>
+        <button class="menu-btn" onclick="showTab('mesas')">🪑 Mesas</button>
+        <button class="menu-btn" onclick="showTab('config')">⚙️ Configurações</button>
+        
+        <button class="menu-btn btn-logout" onclick="logout()">🚪 Sair</button>
+    </aside>
+
+    <main>
+        <div id="dashboard" class="tab-content active">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px">
+                <h2>Visão Geral</h2>
+                <div>
+                    <input type="date" id="dataFiltro" style="width:auto;">
+                    <button class="btn-primary" onclick="carregarDashboard()">Atualizar</button>
+                </div>
+            </div>
+            
+            <div class="dashboard-grid">
+                <div class="card">
+                    <h3>Faturamento Dia</h3>
+                    <div class="big-number" id="dash-faturamento">R$ 0,00</div>
+                </div>
+                <div class="card">
+                    <h3>Top Item (Qtd)</h3>
+                    <div id="dash-top-item" style="font-size:1.2rem; color:#ccc; margin-top:10px">--</div>
+                </div>
+                <div class="card">
+                    <h3>Top Faturamento</h3>
+                    <div id="dash-top-faturamento" style="font-size:1.2rem; color:#00E5FF; margin-top:10px">--</div>
+                </div>
+            </div>
+
+            <div class="charts-container">
+                <div class="chart-card">
+                    <h3>📉 Vendas por Quantidade</h3>
+                    <canvas id="chartQtd"></canvas>
+                </div>
+                <div class="chart-card">
+                    <h3>💰 Faturamento por Item</h3>
+                    <canvas id="chartFat"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div id="cardapio" class="tab-content">
+            <h2>Gerenciar Cardápio</h2>
+            <div style="background: var(--panel); padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+                <div style="display:grid; grid-template-columns: 2fr 1fr 1fr auto auto; gap: 10px; align-items: end;">
+                    <div><label>Nome</label><input type="text" id="prod-nome" placeholder="Ex: Coca-Cola"></div>
+                    <div><label>Categoria</label><select id="prod-cat"><option value="BEBIDA">Bebida</option><option value="COMIDA">Comida</option></select></div>
+                    <div><label>Preço (R$)</label><input type="number" id="prod-preco" step="0.10" placeholder="0.00"></div>
+                    <button class="btn-primary" id="btn-salvar-prod" onclick="salvarProduto()">Cadastrar</button>
+                    <button class="btn-sec" id="btn-cancel-prod" onclick="cancelarEdicaoProduto()" style="display:none">Cancelar</button>
+                </div>
+            </div>
+            <div id="lista-produtos"></div>
+        </div>
+
+        <div id="mesas" class="tab-content">
+            <h2>Gerenciar Mesas</h2>
+            <div style="background: var(--panel); padding: 20px; border-radius: 10px; margin-bottom: 20px; max-width: 400px;">
+                <label>Número da Mesa</label>
+                <div style="display:flex; gap:10px;">
+                    <input type="number" id="mesa-num" placeholder="Ex: 10">
+                    <button class="btn-primary" id="btn-salvar-mesa" onclick="salvarMesa()">Criar Mesa</button>
+                </div>
+            </div>
+            <div id="lista-mesas"></div>
+        </div>
+
+        <div id="config" class="tab-content">
+            <h2>Taxas e Configurações</h2>
+            <div style="background: var(--panel); padding: 30px; border-radius: 10px; max-width: 400px;">
+                <div class="form-group"><label>Valor do Couvert (R$)</label><input type="number" id="conf-couvert" step="0.50"></div>
+                <div class="form-group"><label>Gorjeta Bebida (0.10 = 10%)</label><input type="number" id="conf-gorjeta-bebida" step="0.01"></div>
+                <div class="form-group"><label>Gorjeta Comida (0.10 = 10%)</label><input type="number" id="conf-gorjeta-comida" step="0.01"></div>
+                <button class="btn-primary" style="width:100%" onclick="salvarConfig()">Salvar Alterações</button>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const BASE_API = 'http://localhost:8080/api';
+        const ADMIN_TOKEN = localStorage.getItem('bar_token');
+
+        if (!ADMIN_TOKEN && window.location.pathname.endsWith('Admin.html')) {
+             alert("Acesso negado. Faça login.");
+             window.location.href = "index.html";
+        }
+
+        let idProdutoEditando = null;
+        let idMesaEditando = null;
+        
+        // Variáveis para os Gráficos (Chart.js)
+        let chartQtd = null;
+        let chartFat = null;
+
+        function logout() {
+            localStorage.removeItem('bar_token');
+            window.location.href = "index.html";
+        }
+
+        async function authFetch(url, options = {}) {
+            if (!options.headers) options.headers = {};
+            options.headers['Authorization'] = 'Bearer ' + ADMIN_TOKEN;
+            if (options.body && !options.headers['Content-Type']) {
+                options.headers['Content-Type'] = 'application/json';
+            }
+            const res = await fetch(url, options);
+            if (res.status === 401 || res.status === 403) {
+                alert("Sessão expirada ou sem permissão!");
+                logout();
+                throw new Error("Acesso Negado");
+            }
+            if (!res.ok) {
+                const erro = await res.text();
+                throw new Error(erro);
+            }
+            return res;
+        }
+
+        function showTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            if(event && event.target) event.target.classList.add('active');
+            
+            if(tabId === 'dashboard') carregarDashboard();
+            if(tabId === 'cardapio') listarProdutos();
+            if(tabId === 'mesas') listarMesas();
+        }
+
+        // --- DASHBOARD & GRÁFICOS ---
+        async function carregarDashboard() {
+            const data = document.getElementById('dataFiltro').value;
+            try {
+                const resFat = await authFetch(`${BASE_API}/admin/relatorios/faturamento?inicio=${data}T00:00:00&fim=${data}T23:59:59`);
+                const valor = await resFat.json();
+                document.getElementById('dash-faturamento').innerText = valor.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+                
+                // Dados para Gráfico 1 (Quantidade)
+                const resTopQtd = await authFetch(`${BASE_API}/admin/relatorios/itens-mais-vendidos`);
+                const listaTopQtd = await resTopQtd.json();
+                document.getElementById('dash-top-item').innerText = 
+                    listaTopQtd.length > 0 ? `${listaTopQtd[0].nomeItem} (${listaTopQtd[0].quantidadeVendida} un)` : "--";
+
+                // Dados para Gráfico 2 (Faturamento)
+                const resTopFat = await authFetch(`${BASE_API}/admin/relatorios/itens-faturamento`);
+                const listaTopFat = await resTopFat.json();
+                
+                if (listaTopFat.length > 0) {
+                    const item = listaTopFat[0];
+                    const val = parseFloat(item.faturamentoTotal).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+                    document.getElementById('dash-top-faturamento').innerText = `${item.nomeItem} (${val})`;
+                }
+
+                // RENDERIZAR GRÁFICOS
+                atualizarGraficos(listaTopQtd, listaTopFat);
+
+            } catch(e) { console.error(e); }
+        }
+
+        function atualizarGraficos(dataQtd, dataFat) {
+            // Gráfico 1: Barras (Quantidade)
+            const ctxQtd = document.getElementById('chartQtd').getContext('2d');
+            if (chartQtd) chartQtd.destroy();
+            
+            chartQtd = new Chart(ctxQtd, {
+                type: 'bar',
+                data: {
+                    labels: dataQtd.map(i => i.nomeItem),
+                    datasets: [{
+                        label: 'Vendas (Un)',
+                        data: dataQtd.map(i => i.quantidadeVendida),
+                        backgroundColor: '#9D00FF',
+                        borderColor: '#fff',
+                        borderWidth: 1
+                    }]
+                },
+                options: { 
+                    responsive: true, 
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true, ticks: { color: '#888' } }, x: { ticks: { color: '#888' } } } 
+                }
+            });
+
+            // Gráfico 2: Rosca (Faturamento)
+            const ctxFat = document.getElementById('chartFat').getContext('2d');
+            if (chartFat) chartFat.destroy();
+
+            chartFat = new Chart(ctxFat, {
+                type: 'doughnut',
+                data: {
+                    labels: dataFat.map(i => i.nomeItem),
+                    datasets: [{
+                        label: 'Faturamento',
+                        data: dataFat.map(i => i.faturamentoTotal),
+                        backgroundColor: ['#FF9E0B', '#00E5FF', '#9D00FF', '#00ff88', '#F44336'],
+                        borderWidth: 0
+                    }]
+                },
+                options: { 
+                    responsive: true,
+                    plugins: { legend: { position: 'right', labels: { color: '#ccc' } } }
+                }
+            });
+        }
+
+        // --- CRUD PRODUTOS ---
+        async function listarProdutos() {
+            try {
+                const res = await fetch(`${BASE_API}/cardapio`); 
+                const produtos = await res.json();
+                let html = '<table><tr><th>Nome</th><th>Categoria</th><th>Preço</th><th>Ações</th></tr>';
+                produtos.forEach(p => {
+                    html += `<tr>
+                        <td>${p.nome}</td><td>${p.categoria}</td><td>R$ ${p.preco.toFixed(2)}</td>
+                        <td>
+                            <button class="btn-icon btn-edit" onclick="prepararEdicaoProduto(${p.id}, '${p.nome}', '${p.categoria}', ${p.preco})">✏️</button>
+                            <button class="btn-icon btn-delete" onclick="deletarProduto(${p.id})">🗑️</button>
+                        </td>
+                    </tr>`;
+                });
+                document.getElementById('lista-produtos').innerHTML = html + '</table>';
+            } catch(e) { console.error(e); }
+        }
+
+        function prepararEdicaoProduto(id, nome, categoria, preco) {
+            idProdutoEditando = id;
+            document.getElementById('prod-nome').value = nome;
+            document.getElementById('prod-cat').value = categoria;
+            document.getElementById('prod-preco').value = preco;
+            document.getElementById('btn-salvar-prod').innerText = "Atualizar";
+            document.getElementById('btn-cancel-prod').style.display = "inline-block";
+        }
+
+        function cancelarEdicaoProduto() {
+            idProdutoEditando = null;
+            document.getElementById('prod-nome').value = '';
+            document.getElementById('prod-preco').value = '';
+            document.getElementById('btn-salvar-prod').innerText = "Cadastrar";
+            document.getElementById('btn-cancel-prod').style.display = "none";
+        }
+
+        async function salvarProduto() {
+            const nome = document.getElementById('prod-nome').value;
+            const cat = document.getElementById('prod-cat').value;
+            const preco = document.getElementById('prod-preco').value;
+            const metodo = idProdutoEditando ? 'PUT' : 'POST';
+            const url = idProdutoEditando ? `${BASE_API}/cardapio/${idProdutoEditando}` : `${BASE_API}/cardapio`;
+
+            try {
+                await authFetch(url, {
+                    method: metodo,
+                    body: JSON.stringify({ nome, categoria: cat, preco })
+                });
+                alert(idProdutoEditando ? 'Atualizado!' : 'Cadastrado!');
+                cancelarEdicaoProduto();
+                listarProdutos();
+            } catch (e) { alert(e.message); }
+        }
+
+        async function deletarProduto(id) {
+            if(confirm("Excluir item?")) {
+                try {
+                    await authFetch(`${BASE_API}/cardapio/${id}`, { method: 'DELETE' });
+                    alert('Excluído!'); 
+                    listarProdutos();
+                } catch(e) { alert("Erro: " + e.message); }
+            }
+        }
+
+        // --- CRUD MESAS ---
+        async function listarMesas() {
+            try {
+                const res = await authFetch(`${BASE_API}/admin/mesas`);
+                const mesas = await res.json();
+                let html = '<table><tr><th>Mesa</th><th>Status</th><th>Ação</th></tr>';
+                mesas.forEach(m => {
+                    html += `<tr><td>Mesa ${m.numero}</td><td>${m.status}</td>
+                        <td>
+                            <button class="btn-icon btn-edit" onclick="prepararEdicaoMesa(${m.id}, ${m.numero})">✏️</button>
+                            <button class="btn-icon btn-delete" onclick="deletarMesa(${m.id})">🗑️</button>
+                        </td></tr>`;
+                });
+                document.getElementById('lista-mesas').innerHTML = html + '</table>';
+            } catch(e) {}
+        }
+        
+        function prepararEdicaoMesa(id, num) {
+            idMesaEditando = id;
+            document.getElementById('mesa-num').value = num;
+            document.getElementById('btn-salvar-mesa').innerText = "Salvar";
+        }
+
+        async function salvarMesa() {
+            const num = document.getElementById('mesa-num').value;
+            const metodo = idMesaEditando ? 'PUT' : 'POST';
+            const url = idMesaEditando ? `${BASE_API}/admin/mesas/${idMesaEditando}` : `${BASE_API}/admin/mesas`;
+            try {
+                await authFetch(url, { method: metodo, body: JSON.stringify({ numero: num }) });
+                alert('Salvo!'); idMesaEditando = null; document.getElementById('btn-salvar-mesa').innerText = "Criar Mesa"; listarMesas();
+            } catch(e) { alert(e.message); }
+        }
+
+        async function deletarMesa(id) {
+            if(confirm("Excluir mesa?")) {
+                try {
+                    await authFetch(`${BASE_API}/admin/mesas/${id}`, { method: 'DELETE' });
+                    alert('Mesa excluída!'); listarMesas();
+                } catch(e) { alert(e.message); }
+            }
+        }
+
+        // --- CONFIGURAÇÕES ---
+        async function salvarConfig() {
+            const url = `${BASE_API}/admin/configuracao?couvert=${document.getElementById('conf-couvert').value}` +
+                        `&gorjetaBebida=${document.getElementById('conf-gorjeta-bebida').value}` +
+                        `&gorjetaComida=${document.getElementById('conf-gorjeta-comida').value}`;
+            try {
+                await authFetch(url, { method: 'POST' });
+                alert('Configurações Salvas!');
+            } catch(e) { alert(e.message); }
+        }
+
+        const hoje = new Date();
+        document.getElementById('dataFiltro').value = `${hoje.getFullYear()}-${String(hoje.getMonth()+1).padStart(2,'0')}-${String(hoje.getDate()).padStart(2,'0')}`;
+        
+        // Inicializa
+        carregarDashboard();
+    </script>
+</body>
+</html>

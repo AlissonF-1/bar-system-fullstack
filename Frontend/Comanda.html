@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minha Comanda</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700&display=swap" rel="stylesheet">
+    <style>
+        /* Tema Padrão */
+        :root {
+            --primary: #FF9E0B; 
+            --bg: #0a0a0a; 
+            --text: #fff; 
+            --success: #00ff88;
+            --card-bg: rgba(255,255,255,0.05);
+            --border: #333;
+            --font-size-base: 16px;
+        }
+        /* Alto Contraste */
+        body.alto-contraste {
+            --primary: #000000 !important;
+            --bg: #ffffff !important;
+            --text: #000000 !important;
+            --success: #008000 !important;
+            --card-bg: #f0f0f0 !important;
+            --border: #000 !important;
+            --font-size-base: 20px !important;
+        }
+
+        body { margin: 0; font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--text); padding-bottom: 120px; transition: 0.3s; font-size: var(--font-size-base); }
+        header { text-align: center; padding: 30px 20px; background: linear-gradient(180deg, rgba(255,158,11,0.1), transparent); }
+        body.alto-contraste header { background: none; border-bottom: 4px solid #000; }
+        h1 { margin: 0; color: var(--primary); text-transform: uppercase; letter-spacing: 2px; }
+        .mesa-badge { background: #333; padding: 5px 15px; border-radius: 20px; font-size: 0.9rem; margin-top: 10px; display: inline-block; }
+        body.alto-contraste .mesa-badge { background: #000; color: #fff; font-weight: bold; }
+
+        /* BOTÕES DE ACESSIBILIDADE */
+        .acessibilidade-bar { display: flex; justify-content: center; gap: 10px; margin-top: 15px; }
+        .btn-acess { background: transparent; border: 1px solid rgba(255,255,255,0.3); color: #fff; padding: 8px 15px; border-radius: 20px; cursor: pointer; font-size: 0.9rem; display: flex; align-items: center; gap: 5px; transition: 0.2s; }
+        .btn-acess:hover { background: rgba(255,255,255,0.1); }
+        body.alto-contraste .btn-acess { border: 2px solid #000; color: #000; font-weight: bold; }
+
+        /* BOTÃO CHAMAR GARÇOM */
+        .chamada-container { text-align: center; margin: 20px 0; }
+        .btn-chamar { 
+            background: var(--primary); color: #000; border: none; 
+            padding: 12px 25px; border-radius: 30px; font-weight: bold; font-size: 1rem;
+            cursor: pointer; box-shadow: 0 4px 15px rgba(255, 158, 11, 0.3);
+            transition: 0.2s; display: inline-flex; align-items: center; gap: 8px;
+        }
+        .btn-chamar:hover { transform: scale(1.05); }
+        .btn-chamar:active { transform: scale(0.95); }
+
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .item-card { background: var(--card-bg); padding: 15px; border-radius: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border: 1px solid transparent; }
+        body.alto-contraste .item-card { border: 2px solid #000; }
+        .item-price { font-weight: bold; color: var(--primary); }
+        
+        .footer { position: fixed; bottom: 0; left: 0; right: 0; background: #151515; padding: 20px; border-top: 1px solid #333; box-shadow: 0 -10px 30px rgba(0,0,0,0.5); z-index: 100; }
+        body.alto-contraste .footer { background: #fff; border-top: 4px solid #000; }
+        .resumo-row { display: flex; justify-content: space-between; font-size: 0.9rem; color: #aaa; margin-bottom: 5px; }
+        body.alto-contraste .resumo-row { color: #000; font-weight: bold; }
+        .total-row { display: flex; justify-content: space-between; font-size: 1.5rem; font-weight: bold; color: var(--primary); margin-top: 10px; padding-top: 10px; border-top: 1px solid #333; }
+        body.alto-contraste .total-row { border-top: 2px solid #000; }
+        
+        #tela-paga { display: none; text-align: center; padding-top: 50px; }
+        .check-icon { font-size: 5rem; color: var(--success); margin-bottom: 20px; display: block; }
+    </style>
+</head>
+<body>
+
+    <div id="tela-comanda">
+        <header>
+            <h1>Bar Experience</h1>
+            <div class="mesa-badge" id="mesa-titulo">Mesa --</div>
+            
+            <div class="acessibilidade-bar">
+                <button class="btn-acess" onclick="lerComandaEmVozAlta()">🔊 Ouvir</button>
+                <button class="btn-acess" onclick="alternarContraste()">👁️ Alto Contraste</button>
+            </div>
+        </header>
+
+        <div class="chamada-container">
+            <button class="btn-chamar" onclick="chamarGarcom()">
+                🔔 Chamar Garçom
+            </button>
+        </div>
+
+        <div class="container" id="lista-itens">
+            <p style="text-align:center; color:#666; margin-top: 50px">Carregando...</p>
+        </div>
+
+        <div class="footer">
+            <div class="resumo-row"><span>Comida:</span> <span id="r-comida">R$ 0,00</span></div>
+            <div class="resumo-row"><span>Bebida:</span> <span id="r-bebida">R$ 0,00</span></div>
+            <div class="resumo-row"><span>Serviço:</span> <span id="r-servico">R$ 0,00</span></div>
+            <div class="resumo-row"><span>Couvert:</span> <span id="r-couvert">R$ 0,00</span></div>
+            <div class="total-row">
+                <span>TOTAL</span>
+                <span id="r-total">R$ 0,00</span>
+            </div>
+            <div class="resumo-row" style="margin-top:5px; color:#4CAF50; display:none" id="linha-pago">
+                <span>Pago:</span> <span id="res-pago">R$ 0,00</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="tela-paga">
+        <span class="check-icon">✔</span>
+        <div style="font-size: 1.5rem; color: var(--success); font-weight: bold;">Conta Paga!</div>
+        <p style="color: #aaa; margin-top: 10px;">Obrigado pela preferência.</p>
+        <p id="total-pago-final" style="font-size: 1.2rem; margin-top: 20px; color: #fff"></p>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const idMesa = urlParams.get('id') || 1; 
+        // GARANTA QUE ESTÁ 8080
+        const API_URL = `http://localhost:8080/api/cliente/mesas`;
+
+        document.getElementById('mesa-titulo').innerText = `MESA ${String(idMesa).padStart(2,'0')}`;
+
+        function formatarMoeda(valor) {
+            return parseFloat(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        }
+
+        // --- FUNÇÃO QUE ESTAVA FALTANDO ---
+        async function chamarGarcom() {
+            const btn = document.querySelector('.btn-chamar');
+            btn.innerText = "Chamando...";
+            btn.disabled = true;
+
+            try {
+                const res = await fetch(`${API_URL}/${idMesa}/chamar`, { method: 'POST' });
+                if(res.ok) {
+                    alert("O garçom foi notificado! Aguarde um instante.");
+                } else {
+                    alert("Erro ao chamar garçom.");
+                }
+            } catch(e) {
+                alert("Erro de conexão com o bar.");
+            } finally {
+                btn.innerText = "🔔 Chamar Garçom";
+                btn.disabled = false;
+            }
+        }
+
+        async function carregarConta() {
+            try {
+                const response = await fetch(`${API_URL}/${idMesa}`);
+                if (!response.ok) throw new Error("Erro");
+                const dados = await response.json();
+                renderizar(dados);
+            } catch (error) { console.log("Aguardando conta..."); }
+        }
+
+        function renderizar(dados) {
+            const d = dados.detalhes;
+            const itens = dados.itensConsumidos;
+
+            if (d.saldoPendente <= 0 && d.totalGeral > 0) {
+                document.getElementById('tela-comanda').style.display = 'none';
+                document.getElementById('tela-paga').style.display = 'block';
+                document.getElementById('total-pago-final').innerText = `Valor Pago: ${formatarMoeda(d.totalPago)}`;
+                return; 
+            } 
+            document.getElementById('tela-comanda').style.display = 'block';
+            document.getElementById('tela-paga').style.display = 'none';
+
+            const container = document.getElementById('lista-itens');
+            container.innerHTML = '';
+
+            if(!itens || itens.length === 0) {
+                container.innerHTML = '<p style="text-align:center; color:#666; margin-top:50px; font-style:italic">Aguardando pedidos...</p>';
+            } else {
+                itens.forEach(item => {
+                    if(item.status === 'PENDENTE' || item.status === 'PRONTO' || item.status === 'ATIVO') {
+                        const totalItem = item.itemCardapio.preco * item.quantidade;
+                        const html = `
+                            <div class="item-card">
+                                <div class="item-info">
+                                    <div>${item.itemCardapio.nome}</div>
+                                    <div style="font-size:0.85rem; color:var(--text-muted)">${item.quantidade}x ${formatarMoeda(item.itemCardapio.preco)}</div>
+                                </div>
+                                <div class="item-price">${formatarMoeda(totalItem)}</div>
+                            </div>`;
+                        container.innerHTML += html;
+                    }
+                });
+            }
+
+            const gorjeta = parseFloat(d.gorjetaComida) + parseFloat(d.gorjetaBebida);
+            document.getElementById('r-comida').innerText = formatarMoeda(d.subTotalComida);
+            document.getElementById('r-bebida').innerText = formatarMoeda(d.subTotalBebida);
+            document.getElementById('r-servico').innerText = formatarMoeda(gorjeta);
+            document.getElementById('r-couvert').innerText = formatarMoeda(d.valorCouvert);
+            
+            const valorExibido = d.saldoPendente > 0 && d.totalPago > 0 ? d.saldoPendente : d.totalGeral;
+            const labelTotal = d.saldoPendente > 0 && d.totalPago > 0 ? "RESTANTE" : "TOTAL";
+            
+            document.getElementById('r-total').parentElement.firstElementChild.innerText = labelTotal;
+            document.getElementById('r-total').innerText = formatarMoeda(valorExibido);
+            
+            if (parseFloat(d.totalPago) > 0) {
+                document.getElementById('linha-pago').style.display = 'flex';
+                document.getElementById('res-pago').innerText = formatarMoeda(d.totalPago);
+            }
+        }
+
+        function lerComandaEmVozAlta() {
+            if (!'speechSynthesis' in window) { alert("Navegador não suporta voz."); return; }
+            const mesa = document.getElementById('mesa-titulo').innerText;
+            const total = document.getElementById('r-total').innerText;
+            const frase = `Olá! Esta é a ${mesa}. O valor total da sua conta é ${total}.`;
+            const fala = new SpeechSynthesisUtterance(frase);
+            fala.lang = 'pt-BR';
+            window.speechSynthesis.cancel();
+            window.speechSynthesis.speak(fala);
+        }
+
+        function alternarContraste() {
+            document.body.classList.toggle('alto-contraste');
+        }
+
+        carregarConta();
+        setInterval(carregarConta, 3000);
+    </script>
+</body>
+</html>

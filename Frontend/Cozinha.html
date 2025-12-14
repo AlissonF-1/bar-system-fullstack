@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>KDS - Cozinha</title>
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg: #1a1a1a; --card: #ffeb3b; --text: #000; }
+        body { margin: 0; font-family: 'Chakra Petch', sans-serif; background: var(--bg); color: #fff; padding: 20px; }
+        header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #333; padding-bottom: 20px; margin-bottom: 20px; }
+        h1 { margin: 0; text-transform: uppercase; letter-spacing: 2px; color: #ff9800; }
+        .clock { font-size: 1.5rem; font-weight: bold; }
+        .kds-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
+        .ticket { background: var(--card); color: var(--text); border-radius: 5px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.5); animation: popIn 0.3s ease-out; }
+        .ticket-header { background: #fbc02d; padding: 10px; font-weight: bold; display: flex; justify-content: space-between; font-size: 1.2rem; }
+        .ticket-body { padding: 15px; font-size: 1.1rem; min-height: 80px; display: flex; align-items: center; justify-content: center; flex-direction: column; }
+        .item-name { font-size: 1.4rem; font-weight: bold; }
+        .ticket-footer { padding: 10px; background: #fff9c4; text-align: center; }
+        button { width: 100%; padding: 15px; background: #2e7d32; color: white; border: none; font-weight: bold; font-size: 1rem; cursor: pointer; text-transform: uppercase; font-family: 'Chakra Petch', sans-serif; }
+        @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    </style>
+</head>
+<body>
+    <header><h1>👨‍🍳 Monitor de Cozinha</h1><div class="clock" id="relogio">00:00:00</div></header>
+    <div id="sem-pedidos" style="text-align:center; color:#555; margin-top:50px; display:none"><h2>Cozinha Livre</h2></div>
+    <div class="kds-grid" id="grid-pedidos"></div>
+    <script>
+        const API = 'http://localhost:8080/api/cozinha';
+        setInterval(() => { document.getElementById('relogio').innerText = new Date().toLocaleTimeString(); }, 1000);
+        async function carregarPedidos() {
+            try {
+                const res = await fetch(`${API}/pedidos`);
+                const pedidos = await res.json();
+                const grid = document.getElementById('grid-pedidos');
+                grid.innerHTML = '';
+                if(pedidos.length === 0) { document.getElementById('sem-pedidos').style.display = 'block'; return; }
+                document.getElementById('sem-pedidos').style.display = 'none';
+                pedidos.forEach(p => {
+                    const html = `
+                        <div class="ticket">
+                            <div class="ticket-header"><span>MESA ${p.conta.mesa.numero}</span><span>#${p.id}</span></div>
+                            <div class="ticket-body">
+                                <div class="item-name">${p.itemCardapio.nome}</div>
+                                <div class="item-qtd">Quantidade: ${p.quantidade}</div>
+                            </div>
+                            <div class="ticket-footer"><button onclick="pronto(${p.id})">✅ PRONTO</button></div>
+                        </div>`;
+                    grid.innerHTML += html;
+                });
+            } catch(e) { console.error(e); }
+        }
+        async function pronto(id) {
+            await fetch(`${API}/pedidos/${id}/pronto`, { method: 'POST' });
+            carregarPedidos();
+        }
+        setInterval(carregarPedidos, 2000); carregarPedidos();
+    </script>
+</body>
+</html>

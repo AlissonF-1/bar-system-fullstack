@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel do Garçom</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0a0a0a; 
+            --glass: #1a1a1a;
+            --border: #333;
+            --livre: #00ff88; 
+            --ocupada: #2196F3; 
+            --fechada: #ff4d4d; 
+            --text: #ffffff;
+            --input-bg: #252525;
+            --primary: #FF9E0B;
+        }
+        body { margin: 0; font-family: 'Outfit', sans-serif; background-color: var(--bg-dark); color: var(--text); padding: 20px; }
+        
+        /* HEADER */
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 1px solid var(--border); padding-bottom: 20px; }
+        h1 { margin: 0; font-weight: 700; letter-spacing: 1px; }
+        
+        /* GRID DE MESAS */
+        .grid-mesas { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 20px; max-width: 1200px; margin: 0 auto; }
+        
+        .mesa-card { 
+            background: var(--glass); border: 1px solid var(--border); border-radius: 16px; padding: 25px; 
+            text-align: center; cursor: pointer; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); 
+            position: relative; display: flex; flex-direction: column; justify-content: center; align-items: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        .mesa-card:hover { transform: translateY(-5px); border-color: #666; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
+        
+        .mesa-id { position: absolute; top: 10px; right: 15px; font-size: 0.75rem; color: #555; font-weight: bold; }
+        .mesa-numero { font-size: 2rem; font-weight: 700; display: block; margin-bottom: 5px; }
+        .mesa-status { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; padding: 4px 10px; border-radius: 20px; font-weight: 600; }
+        
+        .status-LIVRE { color: var(--livre); background: rgba(0, 255, 136, 0.1); border: 1px solid rgba(0, 255, 136, 0.2); }
+        .status-OCUPADA, .status-ABERTA { color: var(--ocupada); background: rgba(33, 150, 243, 0.1); border: 1px solid rgba(33, 150, 243, 0.2); }
+        .status-FECHADA { color: var(--fechada); background: rgba(255, 77, 77, 0.1); border: 1px solid rgba(255, 77, 77, 0.2); }
+
+        /* ANIMAÇÃO DE CHAMADO */
+        @keyframes piscar { 
+            0% { border-color: #FF9E0B; box-shadow: 0 0 10px #FF9E0B; } 
+            50% { border-color: transparent; box-shadow: none; } 
+            100% { border-color: #FF9E0B; box-shadow: 0 0 10px #FF9E0B; } 
+        }
+        .chamando-garcom { animation: piscar 1s infinite; border: 2px solid #FF9E0B !important; }
+        .icone-sino { font-size: 1.5rem; position: absolute; top: -10px; left: -10px; background: #FF9E0B; border-radius: 50%; padding: 5px; box-shadow: 0 2px 5px black; z-index: 10; }
+
+        /* MODAL */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px); z-index: 1000; justify-content: center; align-items: center; }
+        
+        .modal-content { 
+            background: #1e1e1e; border: 1px solid #444; padding: 30px; border-radius: 20px; 
+            width: 95%; max-width: 500px; max-height: 90vh; overflow-y: auto; 
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8); position: relative;
+        }
+        
+        .close-btn { position: absolute; top: 20px; right: 25px; font-size: 1.8rem; cursor: pointer; color: #888; transition: 0.2s; }
+        .close-btn:hover { color: #fff; }
+        
+        h2#modal-titulo { margin-top: 0; font-size: 1.8rem; border-bottom: 1px solid #333; padding-bottom: 15px; margin-bottom: 20px; color: var(--text); }
+
+        /* ELEMENTOS DO FORMULÁRIO */
+        label { display: block; margin-top: 15px; color: #aaa; font-size: 0.9rem; margin-bottom: 5px; }
+        
+        input, select { 
+            width: 100%; padding: 12px; background: var(--input-bg); border: 1px solid #444; 
+            color: white; border-radius: 8px; box-sizing: border-box; font-family: inherit; font-size: 1rem;
+            transition: 0.2s;
+        }
+        input:focus, select:focus { border-color: var(--ocupada); outline: none; }
+
+        /* BOTÕES */
+        button { width: 100%; padding: 14px; margin-top: 12px; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 1rem; transition: 0.2s; text-transform: uppercase; letter-spacing: 0.5px; }
+        button:hover { filter: brightness(1.1); transform: scale(1.01); }
+        
+        .btn-abrir { background: var(--livre); color: #000; }
+        .btn-item { background: var(--ocupada); color: white; margin-top: 20px; }
+        .btn-fechar { background: var(--fechada); color: white; }
+        .btn-liberar { background: var(--livre); color: #000; border: 1px solid #fff; }
+        .btn-print { background: #2196F3; color: white; margin-bottom: 10px; }
+        .btn-cancelar { width: auto; padding: 5px 10px; margin: 0; background: transparent; font-size: 1.2rem; }
+        .btn-cancelar:hover { transform: scale(1.2); }
+        .btn-sair { width: auto; padding: 8px 15px; background: #333; border: 1px solid #555; margin: 0; font-size: 0.9rem; color: #ccc; }
+        
+        /* LISTA DE ITENS */
+        .lista-itens { 
+            background: #151515; border-radius: 10px; padding: 10px; margin-top: 5px; 
+            max-height: 200px; overflow-y: auto; border: 1px solid #333;
+        }
+        .item-row { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #2a2a2a; }
+        .item-row:last-child { border-bottom: none; }
+        
+        .couvert-control { display: flex; align-items: center; justify-content: space-between; background: #252525; padding: 12px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #333; }
+        .couvert-control input { width: 20px; height: 20px; margin: 0; cursor: pointer; accent-color: var(--ocupada); }
+
+        .total-display { background: #000; padding: 15px; border-radius: 8px; text-align: center; margin-top: 20px; border: 1px solid #333; }
+        .total-display span { display: block; font-size: 0.9rem; color: #888; }
+        .total-display strong { font-size: 1.4rem; color: #fff; }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #1a1a1a; }
+        ::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
+
+        /* --- ESTILOS DA IMPRESSÃO (CUPOM FISCAL) --- */
+        #cupom-fiscal { display: none; } /* Esconde na tela normal */
+
+        @media print {
+            @page { margin: 0; size: auto; }
+            body { background-color: white; height: 100%; width: 100%; position: fixed; top: 0; left: 0; margin: 0; }
+            body * { visibility: hidden; } /* Esconde tudo */
+            
+            #cupom-fiscal, #cupom-fiscal * { visibility: visible; } /* Mostra só o cupom */
+            
+            #cupom-fiscal {
+                position: absolute; left: 50%; transform: translateX(-50%); top: 20px;
+                width: 300px; /* Largura padrão 80mm */
+                font-family: 'Courier New', Courier, monospace; 
+                color: black; font-size: 12px; line-height: 1.4;
+                display: block;
+            }
+            .cupom-header { text-align: center; margin-bottom: 15px; border-bottom: 1px dashed #000; padding-bottom: 10px; }
+            .cupom-header h3 { margin: 0; font-size: 16px; text-transform: uppercase; }
+            .cupom-header p { margin: 2px 0; font-size: 10px; }
+            
+            .cupom-item { display: flex; justify-content: space-between; margin-bottom: 5px; }
+            .item-desc { flex: 1; }
+            .item-price { white-space: nowrap; padding-left: 10px; }
+            
+            .cupom-divider { border-top: 1px dashed #000; margin: 10px 0; }
+            
+            .cupom-resumo-row { display: flex; justify-content: space-between; margin-bottom: 3px; }
+            .cupom-total { font-size: 16px; font-weight: bold; border-top: 2px solid #000; border-bottom: 2px solid #000; padding: 10px 0; margin-top: 10px; display: flex; justify-content: space-between; }
+            
+            .cupom-footer { text-align: center; margin-top: 20px; font-size: 10px; border-top: 1px dashed #000; padding-top: 10px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ÁREA OCULTA DE IMPRESSÃO -->
+    <div id="cupom-fiscal">
+        <div class="cupom-header">
+            <h3>BAR SYSTEM</h3>
+            <p>Rua da Tecnologia, 100 - Java City</p>
+            <p>CNPJ: 00.000.000/0001-00</p>
+            <p>--------------------------------</p>
+            <p>EXTRATO DE CONFERÊNCIA</p>
+        </div>
+        <div id="cupom-itens"></div>
+        <div class="cupom-divider"></div>
+        <div id="cupom-resumo"></div>
+        <div class="cupom-footer">
+            <p>É obrigatória a emissão de nota fiscal.</p>
+            <p>Obrigado pela preferência!</p>
+        </div>
+    </div>
+
+    <header>
+        <div>
+            <h1>Salão Principal</h1>
+            <span style="color: #888; font-size: 0.9rem;">● Sistema Conectado</span>
+        </div>
+        <button class="btn-sair" onclick="logout()">🚪 Sair</button>
+    </header>
+
+    <div class="grid-mesas" id="container-mesas">
+        <p style="color: #666; text-align:center">Carregando mesas...</p>
+    </div>
+
+    <!-- MODAL -->
+    <div class="modal-overlay" id="mesaModal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="fecharModal()">&times;</span>
+            <h2 id="modal-titulo">Carregando...</h2>
+            <div id="conteudo-dinamico"></div>
+        </div>
+    </div>
+
+    <script>
+    // --- CONFIGURAÇÃO ---
+    const API_URL = 'http://localhost:8080/api'; 
+    let cardapioCache = [];
+    
+    // --- SEGURANÇA ---
+    const ADMIN_TOKEN = localStorage.getItem('bar_token') || "COLE_SEU_TOKEN_AQUI_SE_NAO_USAR_LOGIN"; 
+
+    const AUTH_HEADERS = {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + ADMIN_TOKEN 
+    };
+
+    // Variáveis de controle
+    let mesasChamandoAnterior = 0;
+    
+    // --- LÓGICA PRINCIPAL ---
+    async function carregarMesas() {
+        try {
+            const res = await fetch(`${API_URL}/cliente/mesas`); 
+            if (!res.ok) throw new Error("Erro ao buscar mesas");
+            const mesas = await res.json();
+            
+            // Lógica do Som
+            const mesasChamandoAgora = mesas.filter(m => m.chamandoGarcom).length;
+            if (mesasChamandoAgora > mesasChamandoAnterior) {
+                // Som de notificação
+                new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg').play().catch(e=>{});
+            }
+            mesasChamandoAnterior = mesasChamandoAgora;
+
+            // Carrega cardápio
+            if(cardapioCache.length === 0) {
+                fetch(`${API_URL}/cardapio`).then(r => r.json()).then(d => cardapioCache = d).catch(e=>{});
+            }
+
+            const container = document.getElementById('container-mesas');
+            container.innerHTML = '';
+            
+            if(mesas.length === 0) { container.innerHTML = '<p style="text-align:center; color:#666">Nenhuma mesa cadastrada.</p>'; return; }
+
+            mesas.forEach(mesa => {
+                const card = document.createElement('div');
+                
+                // Verifica se está chamando
+                const classeChamado = mesa.chamandoGarcom ? 'chamando-garcom' : '';
+                const sinoHtml = mesa.chamandoGarcom ? '<div class="icone-sino">🔔</div>' : '';
+
+                card.className = `mesa-card status-${mesa.status} ${classeChamado}`;
+                card.innerHTML = `
+                    ${sinoHtml}
+                    <span class="mesa-id">#${mesa.id}</span>
+                    <span class="mesa-numero">${mesa.numero}</span>
+                    <span class="mesa-status">${mesa.status}</span>
+                `;
+                card.onclick = () => abrirModal(mesa);
+                container.appendChild(card);
+            });
+        } catch (e) { console.error(e); }
+    }
+
+    function gerarOpcoesProdutos() {
+        if (!cardapioCache.length) return '<option disabled>Carregando...</option>';
+        return cardapioCache.map(i => `<option value="${i.id}">${i.nome} - R$ ${i.preco.toFixed(2)}</option>`).join('');
+    }
+
+    // --- ABRIR MODAL ---
+    async function abrirModal(mesa) {
+        const modal = document.getElementById('mesaModal');
+        const titulo = document.getElementById('modal-titulo');
+        const conteudo = document.getElementById('conteudo-dinamico');
+
+        titulo.innerText = `Mesa ${mesa.numero} (${mesa.status})`;
+        modal.style.display = 'flex';
+        conteudo.innerHTML = '<p style="text-align:center; color:#888">Buscando dados...</p>';
+
+        // Botão para atender chamado
+        let botaoAtender = '';
+        if(mesa.chamandoGarcom) {
+            botaoAtender = `
+                <div style="background: #FF9E0B; color: black; padding: 10px; border-radius: 8px; margin-bottom: 15px; text-align: center; font-weight: bold; cursor: pointer;" onclick="atenderMesa(${mesa.id})">
+                    ✅ MARCAR COMO ATENDIDO
+                </div>`;
+        }
+
+        // 1. MESA LIVRE
+        if (mesa.status === 'LIVRE') {
+            conteudo.innerHTML = botaoAtender + `
+                <div style="text-align:center; padding: 20px 0;">
+                    <h3 style="color:var(--livre); margin-bottom:20px">Mesa Livre</h3>
+                    <label style="text-align:left">Número de Pessoas</label>
+                    <input type="number" id="qtdPessoas" value="2" min="1">
+                    <button class="btn-abrir" onclick="abrirMesa(${mesa.id})">Abrir Mesa</button>
+                </div>`;
+            return;
+        } 
+        
+        // 2. MESA FECHADA
+        if (mesa.status === 'FECHADA') {
+            conteudo.innerHTML = botaoAtender + `
+                <div style="text-align:center; margin: 20px 0;">
+                    <h3 style="color:var(--fechada); margin-bottom:20px">Conta Encerrada</h3>
+                    <p style="color:#aaa; margin-bottom:20px">Aguardando pagamento final.</p>
+                    
+                    <button class="btn-print" onclick="imprimirNota(${mesa.id})">🖨️ Reimprimir Nota</button>
+                    <button class="btn-liberar" onclick="liberarMesa(${mesa.id})">💰 Confirmar Pagamento</button>
+                </div>`;
+            return;
+        }
+
+        // 3. MESA ABERTA
+        try {
+            const resConta = await fetch(`${API_URL}/cliente/mesas/${mesa.id}`);
+            if (!resConta.ok) throw new Error("Conta não encontrada");
+            const dadosConta = await resConta.json();
+            
+            // Lista de Itens
+            let listaHtml = '<div class="lista-itens">';
+            if(dadosConta.itensConsumidos && dadosConta.itensConsumidos.length > 0) {
+                dadosConta.itensConsumidos.forEach(item => {
+                    if(item.status !== 'CANCELADO') {
+                        let icon = item.status === 'PENDENTE' ? '⏳' : (item.status === 'PRONTO' ? '🔔' : '✅');
+                        listaHtml += `
+                            <div class="item-row">
+                                <div>
+                                    <span class="item-status-icon">${icon}</span>
+                                    <span class="item-nome">${item.quantidade}x ${item.itemCardapio.nome}</span>
+                                </div>
+                                <button class="btn-cancelar" onclick="cancelarItem(${item.id}, ${mesa.id})">&times;</button>
+                            </div>`;
+                    }
+                });
+            } else { listaHtml += '<div style="padding:10px; color:#666; text-align:center">Nenhum pedido.</div>'; }
+            listaHtml += '</div>';
+
+            // Formatação Corrigida (Garante 2 casas decimais visualmente)
+            const total = parseFloat(dadosConta.detalhes.totalGeral).toFixed(2);
+            const pendente = parseFloat(dadosConta.detalhes.saldoPendente).toFixed(2);
+
+            conteudo.innerHTML = botaoAtender + `
+                <div class="couvert-control">
+                    <span>Cobrar Couvert?</span>
+                    <input type="checkbox" ${dadosConta.detalhes.valorCouvert > 0 ? 'checked' : ''} onchange="alterarCouvert(${mesa.id}, this.checked)">
+                </div>
+
+                <label>Pedidos</label>
+                ${listaHtml}
+
+                <div style="background:#222; padding:15px; border-radius:10px; margin-top:20px; border:1px solid #333;">
+                    <label style="margin-top:0">Adicionar Pedido</label>
+                    <div style="display:flex; gap:10px;">
+                        <select id="selectItem" style="flex:2">${gerarOpcoesProdutos()}</select>
+                        <input type="number" id="qtdItem" value="1" min="1" style="flex:1">
+                    </div>
+                    <button class="btn-item" onclick="adicionarItem(${mesa.id})">Adicionar</button>
+                </div>
+
+                <div class="total-display">
+                    <div>
+                        <span class="total-label">Total Parcial</span>
+                        <span class="total-value">R$ ${total}</span>
+                    </div>
+                    <div style="text-align:right">
+                         <span class="total-label">Pendente</span>
+                         <div style="color:${pendente > 0 ? '#ff4d4d' : '#00ff88'}; font-weight:bold">R$ ${pendente}</div>
+                    </div>
+                </div>
+
+                <div style="margin-top:20px; display:flex; gap:10px; flex-direction:column">
+                    <button class="btn-print" onclick="imprimirNota(${mesa.id})">🖨️ IMPRIMIR PRÉ-CONTA</button>
+
+                    <div style="display:flex; gap:10px;">
+                        <button class="btn-liberar" style="flex:1" onclick="liberarMesa(${mesa.id})">💰 Pagar & Liberar</button>
+                        <button class="btn-fechar" style="flex:1" onclick="fecharConta(${mesa.id})">Fechar</button>
+                    </div>
+                </div>
+                
+                <div style="text-align:center; margin-top:20px">
+                    <a href="Comanda.html?id=${mesa.id}" target="_blank" style="color:var(--ocupada); text-decoration:none; font-size:0.85rem">📱 QR Code Cliente</a>
+                </div>
+            `;
+
+        } catch(e) { 
+            console.error(e);
+            conteudo.innerHTML = `<div style="text-align:center; color:#ff4d4d; padding:20px"><p>Erro de sincronização.</p><button class="btn-fechar" onclick="liberarMesa(${mesa.id})">Forçar Reset</button></div>`;
+        }
+    }
+
+    function fecharModal() { 
+        document.getElementById('mesaModal').style.display = 'none'; 
+        carregarMesas(); 
+    }
+    function logout() { localStorage.removeItem('bar_token'); window.location.href = 'index.html'; }
+
+    // --- AÇÕES API ---
+    async function abrirMesa(id) {
+        const p = document.getElementById('qtdPessoas').value;
+        await apiCall(`/garcom/mesas/${id}/abrir?pessoas=${p}`);
+    }
+
+    async function adicionarItem(id) {
+        const item = document.getElementById('selectItem').value;
+        const qtd = document.getElementById('qtdItem').value;
+        const res = await apiCall(`/garcom/mesas/${id}/adicionar-item?idItem=${item}&quantidade=${qtd}`);
+        if(res) abrirModal({id:id, numero:'...', status:'OCUPADA'});
+    }
+
+    async function cancelarItem(idItem, idMesa) {
+        if(!confirm("Cancelar item?")) return;
+        const motivo = prompt("Motivo:");
+        if(motivo) {
+            const res = await apiCall(`/garcom/itens-consumidos/${idItem}/cancelar?motivo=${encodeURIComponent(motivo)}`);
+            if(res) abrirModal({id:idMesa, numero:'...', status:'OCUPADA'});
+        }
+    }
+
+    async function alterarCouvert(id, checked) {
+        await apiCall(`/garcom/mesas/${id}/couvert?habilitar=${checked}`);
+        abrirModal({id:id, numero:'...', status:'OCUPADA'});
+    }
+
+    async function fecharConta(id) {
+        if(!confirm("Fechar conta?")) return;
+        const res = await apiCall(`/garcom/mesas/${id}/fechar`);
+        if(res) fecharModal();
+    }
+
+    async function liberarMesa(id) {
+        if(!confirm("Pagar total e liberar?")) return;
+        try {
+            // 1. Pega valor
+            const r1 = await fetch(`${API_URL}/cliente/mesas/${id}`);
+            const d = await r1.json();
+            const valor = d.detalhes.saldoPendente;
+
+            // 2. Paga
+            const r2 = await fetch(`${API_URL}/garcom/mesas/${id}/pagar?valor=${valor}`, { method: 'POST', headers: AUTH_HEADERS });
+            if(!r2.ok) throw new Error(await r2.text());
+
+            // 3. Fecha
+            const r3 = await fetch(`${API_URL}/garcom/mesas/${id}/fechar`, { method: 'POST', headers: AUTH_HEADERS });
+            if(!r3.ok) throw new Error(await r3.text());
+            
+            alert("Mesa Liberada!"); fecharModal();
+        } catch(e) { alert("Erro: " + e.message); }
+    }
+
+    async function atenderMesa(id) {
+        await apiCall(`/garcom/mesas/${id}/atender`);
+        fecharModal();
+    }
+
+    // Função genérica para chamadas POST simples
+    async function apiCall(endpoint) {
+        try {
+            const res = await fetch(`${API_URL}${endpoint}`, { method: 'POST', headers: AUTH_HEADERS });
+            if(!res.ok) {
+                const txt = await res.text();
+                alert("Erro: " + txt);
+                return null;
+            }
+            return true;
+        } catch(e) { alert("Erro de conexão"); return null; }
+    }
+
+    // --- IMPRESSÃO FORMATADA ---
+    async function imprimirNota(idMesa) {
+        try {
+            const res = await fetch(`${API_URL}/cliente/mesas/${idMesa}`);
+            const dados = await res.json();
+            const d = dados.detalhes;
+
+            let htmlItens = '';
+            if(dados.itensConsumidos) {
+                dados.itensConsumidos.forEach(item => {
+                    if(item.status !== 'CANCELADO') {
+                        const totalItem = (item.itemCardapio.preco * item.quantidade).toFixed(2);
+                        htmlItens += `
+                            <div class="cupom-item">
+                                <span class="item-desc">${item.quantidade}x ${item.itemCardapio.nome}</span>
+                                <span class="item-price">R$ ${totalItem}</span>
+                            </div>`;
+                    }
+                });
+            }
+            document.getElementById('cupom-itens').innerHTML = htmlItens;
+            
+            // Formata valores para 2 casas
+            const sub = (parseFloat(d.subTotalComida) + parseFloat(d.subTotalBebida)).toFixed(2);
+            const serv = (parseFloat(d.gorjetaComida) + parseFloat(d.gorjetaBebida)).toFixed(2);
+            const couv = parseFloat(d.valorCouvert).toFixed(2);
+            const tot = parseFloat(d.totalGeral).toFixed(2);
+
+            document.getElementById('cupom-resumo').innerHTML = `
+                <div class="cupom-resumo-row"><span>Subtotal:</span> <span>R$ ${sub}</span></div>
+                <div class="cupom-resumo-row"><span>Serviço (10%):</span> <span>R$ ${serv}</span></div>
+                <div class="cupom-resumo-row"><span>Couvert:</span> <span>R$ ${couv}</span></div>
+                <div class="cupom-total">
+                    <span>TOTAL A PAGAR:</span> 
+                    <span>R$ ${tot}</span>
+                </div>
+            `;
+
+            window.print();
+        } catch(e) { alert("Erro ao gerar nota."); }
+    }
+
+    carregarMesas();
+    setInterval(carregarMesas, 3000);
+    </script>
+</body>
+</html>

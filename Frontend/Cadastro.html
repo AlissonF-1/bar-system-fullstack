@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Gestão - Bar API</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700&display=swap" rel="stylesheet">
+    <style>
+        /* Variáveis e Reset Básico */
+        :root {
+            --primary-color: #ff9800; /* Laranja/Amarelo Cerveja */
+            --background-dark: #1e1e1e;
+            --text-light: #f0f0f0;
+            --card-bg: #2a2a2a;
+            --success-color: #4CAF50;
+            --error-color: #F44336;
+        }
+        body { font-family: 'Outfit', sans-serif; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; background-color: var(--background-dark); color: var(--text-light); margin: 0; padding: 40px 0; }
+        
+        .main-container { display: flex; gap: 30px; max-width: 900px; width: 90%; flex-wrap: wrap; }
+        
+        .card { background-color: var(--card-bg); padding: 30px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4); flex: 1; min-width: 300px; }
+        
+        h2 { text-align: center; color: var(--primary-color); margin-bottom: 20px; border-bottom: 2px solid var(--primary-color); padding-bottom: 10px; }
+        
+        label { display: block; margin-top: 15px; font-weight: 600; }
+        
+        input, select { width: 100%; padding: 10px; margin-top: 8px; box-sizing: border-box; border: 1px solid #444; border-radius: 4px; background-color: #333; color: var(--text-light); font-family: 'Outfit', sans-serif; }
+        
+        button { width: 100%; padding: 12px; background-color: var(--primary-color); color: var(--background-dark); border: none; border-radius: 4px; cursor: pointer; margin-top: 30px; font-weight: bold; transition: background-color 0.3s; font-family: 'Outfit', sans-serif; text-transform: uppercase; }
+        
+        button:hover { background-color: #ffb74d; }
+        
+        #message { margin-top: 20px; text-align: center; padding: 10px; border-radius: 4px; font-weight: bold; }
+        
+        /* Estilos do QR Code */
+        .qr-card { text-align: center; padding: 25px; display: flex; flex-direction: column; justify-content: center; }
+        #qr-display { margin-top: 20px; border: 2px dashed #555; padding: 30px; border-radius: 10px; background: #222; }
+        
+        #contaLink { 
+            color: var(--primary-color); 
+            text-decoration: none; 
+            margin-top: 20px; 
+            display: inline-block; 
+            font-size: 1.1em; 
+            border: 1px solid var(--primary-color);
+            padding: 10px 20px;
+            border-radius: 5px;
+            transition: 0.3s;
+        }
+        #contaLink:hover { background: var(--primary-color); color: #000; }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        
+        <div class="card form-card">
+            <h2>Novo Funcionário (Registro API)</h2>
+            <form id="registroForm">
+                <label for="username">Usuário (Username):</label>
+                <input type="text" id="username" placeholder="Ex: garcom_joao" required>
+
+                <label for="password">Senha:</label>
+                <input type="password" id="password" placeholder="••••••" required>
+
+                <label for="perfil">Perfil:</label>
+                <select id="perfil" required>
+                    <option value="GARCOM">GARÇOM</option>
+                    <option value="ADMIN">ADMINISTRADOR</option>
+                </select>
+
+                <button type="submit">Cadastrar Usuário</button>
+            </form>
+            <div id="message"></div>
+            <div style="text-align: center; margin-top: 20px;">
+                <a href="index.html" style="color: #888; text-decoration: none; font-size: 0.9rem;">← Voltar para Login</a>
+            </div>
+        </div>
+
+        <div class="card qr-card">
+            <h2>Acesso Rápido (Cliente)</h2>
+            <p>Simulação do QR Code para a <strong>Mesa 1</strong>.</p>
+            
+            <div id="qr-display">
+                <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                
+                <br>
+                
+                <a id="contaLink" href="Comanda.html?id=1" target="_blank">
+                    📱 Abrir Visão do Cliente
+                </a>
+            </div>
+            <p style="font-size: 0.8rem; color: #666; margin-top: 20px;">
+                Este link abre a comanda pública (sem login) simulando o celular do cliente.
+            </p>
+        </div>
+    </div>
+    
+    <script src="cadastro.js"></script> 
+</body>
+</html>

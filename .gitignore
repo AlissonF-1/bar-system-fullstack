@@ -1,0 +1,19 @@
+# Java / Maven
+target/
+*.class
+.mvn/
+*.jar
+*.war
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.iml
+.classpath
+.project
+.settings/
+
+# Sistema Operacional
+.DS_Store
+Thumbs.db
